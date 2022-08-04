@@ -109,8 +109,8 @@ async Task HandleMessage(ITelegramBotClient botClient, Message message)
     InlineKeyboardMarkup keyboardPosition = new(new[]
     {
             new[]{
-            InlineKeyboardButton.WithCallbackData("Откуда поедите?", "starting"),
-            InlineKeyboardButton.WithCallbackData("Куда поедите?", "destination"),
+            InlineKeyboardButton.WithCallbackData("Откуда поедете?", "starting"),
+            InlineKeyboardButton.WithCallbackData("Куда поедете?", "destination"),
              InlineKeyboardButton.WithCallbackData("Телефон", "phone")
             },
               new[]{
