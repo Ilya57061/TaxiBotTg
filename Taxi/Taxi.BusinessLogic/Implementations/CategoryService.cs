@@ -27,16 +27,16 @@ namespace Taxi.BusinessLogic.Implementations
         }
 
 
-        public CategoryModel Get(int id)
+        public CategoryModel Get(string name)
         {
-            var category = Find(id);
+            var category = Find(name);
             var categoryModel = _mapper.Map<CategoryModel>(category);
             return categoryModel;
         }
 
-        private Category Find(int id)
+        private Category Find(string name)
         {
-            Category category = _taxiContext.Categories.FirstOrDefault(o => o.Id == id);
+            Category category = _taxiContext.Categories.FirstOrDefault(o => o.Name == name);
             if (category == null) throw new Exception("Object = null");
             return category;
         }

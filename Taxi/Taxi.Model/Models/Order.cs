@@ -12,7 +12,7 @@ namespace Taxi.Model.Models
         public string StartingAddress { get; set; } = string.Empty;
         public string Phone { get; set; } = string.Empty;
         public int? CategoryId { get; set; }
-        public Category? Category{get;set;}
+        public Category? Category { get; set; }
         public int? CarId { get; set; }
         public Car? Car { get; set; }
     }

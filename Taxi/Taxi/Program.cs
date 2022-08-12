@@ -41,6 +41,7 @@ var host = Host.CreateDefaultBuilder()
 .ConfigureServices((context, services) =>
 {
     services.AddTransient<IOrderService, OrderService>();
+    services.AddTransient<IMailService, MailService>();
     services.AddDbContext<TaxiContext>(options => options.UseSqlServer(connection));
     services.AddSingleton(mapper);
 })
@@ -49,6 +50,7 @@ var host = Host.CreateDefaultBuilder()
 var orderService = ActivatorUtilities.CreateInstance<OrderService>(host.Services);
 var categoryService = ActivatorUtilities.CreateInstance<CategoryService>(host.Services);
 var carService = ActivatorUtilities.CreateInstance<CarService>(host.Services);
+var mailService = ActivatorUtilities.CreateInstance<MailService>(host.Services);
 
 #endregion
 
@@ -61,7 +63,7 @@ string destinationAddress = "";
 string chooseReg = "";
 string phone = "";
 
-var botClient = new TelegramBotClient("Use your api");
+var botClient = new TelegramBotClient("5502195701:AAF3SAib84_N_zLFeBX-cDuHEkn44QfHb_4");
 using var cts = new CancellationTokenSource();
 var receiverOptions = new ReceiverOptions
 {
@@ -79,7 +81,7 @@ cts.Cancel();
 
 async Task HandleUpdates(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
 {
-    if (update.Type == UpdateType.Message && update?.Message?.Text != null)
+    if (update.Type == UpdateType.Message && update?.Message != null)
     {
         await HandleMessage(botClient, update.Message);
         return;
@@ -89,82 +91,49 @@ async Task HandleUpdates(ITelegramBotClient botClient, Update update, Cancellati
         await HandleCallbackQuery(botClient, update.CallbackQuery);
         return;
     }
+
 }
 
 async Task HandleMessage(ITelegramBotClient botClient, Message message)
 {
-    ReplyKeyboardMarkup keyboardOrder = new(new[]
-           {
-            new KeyboardButton[] { "Заказать такси"}
-            })
-    {
-        ResizeKeyboard = true
-    };
+
     if (message.Text == "/start")
     {
-
+        ReplyKeyboardMarkup keyboardOrder = new(new[]
+          {
+            new KeyboardButton[] { "Заказать такси"}
+            })
+        {
+            ResizeKeyboard = true
+        };
         await botClient.SendTextMessageAsync(message.Chat.Id, "Выберите действие", replyMarkup: keyboardOrder);
         return;
     }
-    InlineKeyboardMarkup keyboardPosition = new(new[]
-    {
-            new[]{
-            InlineKeyboardButton.WithCallbackData("Откуда поедите?", "starting"),
-            InlineKeyboardButton.WithCallbackData("Куда поедите?", "destination"),
-             InlineKeyboardButton.WithCallbackData("Телефон", "phone")
-            },
-              new[]{
-            InlineKeyboardButton.WithCallbackData("Подтвердить", "select")
-            }
-        });
     if (message.Text == "Заказать такси")
     {
+        ReplyKeyboardMarkup replyKeyboardMarkup = new(new[]
+        {
+            new []
+            {
+        KeyboardButton.WithRequestLocation("Откуда Вас забрать"),
+        //KeyboardButton.WithRequestLocation("Куда Вас отвезти"),
+        KeyboardButton.WithRequestContact("Поделитесь номером телефона"),
+            },
+            new KeyboardButton[] {"Подтвердить" }
+        })
+        {
+            ResizeKeyboard = true
+        };
 
-        await botClient.SendTextMessageAsync(message.Chat.Id, "Выберите:", replyMarkup: keyboardPosition);
+        await botClient.SendTextMessageAsync(
+              message.Chat.Id,
+              text: $"Укажите дополнительную информацию, пользуясь предложенными кнопками.",
+              replyMarkup: replyKeyboardMarkup);
         return;
     }
-
-    if (chooseReg == "starting")
+    if (message.Text=="Подтвердить")
     {
-        startAddress = message.Text;
-        await botClient.SendTextMessageAsync(message.Chat.Id, $"Откуда: {message.Text}", replyMarkup: keyboardPosition);
-        return;
-    }
-    if (chooseReg == "destination")
-    {
-        destinationAddress = message.Text;
-        await botClient.SendTextMessageAsync(message.Chat.Id, $"Куда: {message.Text} ", replyMarkup: keyboardPosition);
-        return;
-    }
-    if (chooseReg == "phone")
-    {
-        phone = message.Text;
-        await botClient.SendTextMessageAsync(message.Chat.Id, $"Ваш телефон: {message.Text} ", replyMarkup: keyboardPosition);
-        return;
-    }
-
-}
-
-async Task HandleCallbackQuery(ITelegramBotClient botClient, CallbackQuery callbackQuery)
-{
-    if (callbackQuery.Data.StartsWith("starting"))
-    {
-        await botClient.SendTextMessageAsync(callbackQuery.Message.Chat.Id, $"Введите адрес откуда Вас забрать");
-        chooseReg = "starting";
-    }
-    if (callbackQuery.Data.StartsWith("destination"))
-    {
-        await botClient.SendTextMessageAsync(callbackQuery.Message.Chat.Id, $"Введите адрес куда Вас отвезти");
-        chooseReg = "destination";
-    }
-    if (callbackQuery.Data.StartsWith("phone"))
-    {
-        await botClient.SendTextMessageAsync(callbackQuery.Message.Chat.Id, $"Введите свой номер телефона");
-        chooseReg = "phone";
-    }
-    if (callbackQuery.Data.StartsWith("select"))
-    {
-        if (startAddress != "" && destinationAddress != "" && phone!="")
+        if (phone != "" && startAddress!="")
         {
             List<InlineKeyboardButton> listButton = new List<InlineKeyboardButton>();
             foreach (var item in categoryService.Get())
@@ -172,20 +141,36 @@ async Task HandleCallbackQuery(ITelegramBotClient botClient, CallbackQuery callb
                 listButton.Add(InlineKeyboardButton.WithCallbackData(item.Name, item.Name));
             }
             InlineKeyboardMarkup keyboard = new(listButton.ToArray());
-            await botClient.SendTextMessageAsync(callbackQuery.Message.Chat.Id, "Выберите класс поездки:", replyMarkup: keyboard);
-
-           
-            chooseReg = "";
+            await botClient.SendTextMessageAsync(message.Chat.Id, $"Выберите класс поездки:", replyMarkup: keyboard);
         }
         else
         {
-            await botClient.SendTextMessageAsync(callbackQuery.Message.Chat.Id, $"Заполните все поля регистрации");
+            await botClient.SendTextMessageAsync(message.Chat.Id, $"Не все данные записаны");
         }
-    }
-    if (categoryService.Get().Any(x=> callbackQuery.Data.StartsWith(x.Name)))
-    {
     
-        orderService.Create(new OrderModel {Phone = phone, DestinationAddress = destinationAddress, StartingAddress = startAddress });
+    }
+    if (message.Contact != null)
+    {
+        phone = message.Contact.PhoneNumber;
+    }
+    if (message.Location!=null)
+    {
+        startAddress = $"Широта: {message.Location.Latitude}\nДолгота: {message.Location.Longitude}";
+    }
+   
+
+}
+
+async Task HandleCallbackQuery(ITelegramBotClient botClient, CallbackQuery callbackQuery)
+{
+
+   
+    if (categoryService.Get().Any(x => callbackQuery.Data.StartsWith(x.Name)))
+    {
+
+        OrderModel order = new OrderModel { Car = carService.Get(callbackQuery.Data), Category = categoryService.Get(callbackQuery.Data), Phone = phone, DestinationAddress = destinationAddress, StartingAddress = startAddress };
+        orderService.Create(order);
+
         await botClient.SendTextMessageAsync(callbackQuery.Message.Chat.Id, $"Вы выбрали: {callbackQuery.Data}\nЗаказ оформлен");
     }
 

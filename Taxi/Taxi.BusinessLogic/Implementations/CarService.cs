@@ -19,20 +19,20 @@ namespace Taxi.BusinessLogic.Implementations
 
         public IEnumerable<CarModel> Get()
         {
-            var car = _taxiContext.Categories.AsNoTracking().ToList();
+            var car = _taxiContext.Cars.AsNoTracking().ToList();
             var carModel = _mapper.Map<List<CarModel>>(car);
             return carModel;
         }
 
-        public CarModel Get(int id)
+        public CarModel Get(string category)
         {
-            var car = Find(id);
+            var car = Find(category);
             var carModel = _mapper.Map<CarModel>(car);
             return carModel;
         }
-        private Car Find(int id)
+        private Car Find(string category)
         {
-            Car car= _taxiContext.Cars.FirstOrDefault(o => o.Id == id);
+            Car car= _taxiContext.Cars.FirstOrDefault(o => o.Category.Name == category);
             if (car == null) throw new Exception("Object = null");
             return car;
         }

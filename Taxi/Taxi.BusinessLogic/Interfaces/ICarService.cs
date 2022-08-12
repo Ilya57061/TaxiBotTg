@@ -6,6 +6,6 @@ namespace Taxi.BusinessLogic.Interfaces
     public interface ICarService
     {
         IEnumerable<CarModel> Get();
-        CarModel Get(int id);
+        CarModel Get(string category);
     }
 }
