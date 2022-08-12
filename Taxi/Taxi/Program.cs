@@ -109,6 +109,20 @@ async Task HandleMessage(ITelegramBotClient botClient, Message message)
         await botClient.SendTextMessageAsync(message.Chat.Id, "Выберите действие", replyMarkup: keyboardOrder);
         return;
     }
+<<<<<<< HEAD
+=======
+    InlineKeyboardMarkup keyboardPosition = new(new[]
+    {
+            new[]{
+            InlineKeyboardButton.WithCallbackData("Откуда поедете?", "starting"),
+            InlineKeyboardButton.WithCallbackData("Куда поедете?", "destination"),
+             InlineKeyboardButton.WithCallbackData("Телефон", "phone")
+            },
+              new[]{
+            InlineKeyboardButton.WithCallbackData("Подтвердить", "select")
+            }
+        });
+>>>>>>> 56e1489a26dc8f78642a2d8d5ba56357a1946d3c
     if (message.Text == "Заказать такси")
     {
         ReplyKeyboardMarkup replyKeyboardMarkup = new(new[]
